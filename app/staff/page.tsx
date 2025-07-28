@@ -21,7 +21,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Users, Plus, Edit, Calendar, Clock, UserCheck, Search, Phone, Mail, Loader2 } from "lucide-react"
+import { Users, Plus, Edit, Calendar, Clock, UserCheck, Search, Phone, Mail, Loader2, Smile } from "lucide-react"
 import { Layout } from "@/components/layout"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
@@ -522,7 +522,7 @@ export default function StaffPage() {
               <CardContent>
                 {loadingStaff ? (
                   <div className="text-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto" />
+                    <Smile className="h-8 w-8 animate-spin text-blue-600 mx-auto" />
                     <p className="text-gray-500 mt-2">Loading staff...</p>
                   </div>
                 ) : staffMembers.length === 0 ? (
@@ -733,7 +733,7 @@ export default function StaffPage() {
               <CardContent>
                 {loadingSchedule ? (
                   <div className="text-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto" />
+                    <Smile className="h-8 w-8 animate-spin text-blue-600 mx-auto" />
                     <p className="text-gray-500 mt-2">Loading schedule...</p>
                   </div>
                 ) : todaySchedule.length === 0 ? (

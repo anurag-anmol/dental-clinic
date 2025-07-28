@@ -1,8 +1,4 @@
 "use client"
-
-import { format } from "date-fns"
-import { Calendar } from "@/components/ui/calendar"
-
 import type React from "react"
 import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,13 +11,13 @@ import {
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogTitle, DialogFooter,
+  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { DollarSign, Plus, Edit, Eye, Search, CreditCard, Clock, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
+import { DollarSign, Plus, Edit, Eye, Search, CreditCard, Clock, CheckCircle, AlertCircle, Loader2, Smile } from "lucide-react"
 import { Layout } from "@/components/layout"
 import { useToast } from "@/hooks/use-toast"
 import { Textarea } from "@/components/ui/textarea"
@@ -71,7 +67,6 @@ export default function BillingPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedInvoiceStatus, setSelectedInvoiceStatus] = useState("all")
   const [selectedInvoiceDate, setSelectedInvoiceDate] = useState("")
-
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(false)
   const [payments, setPayments] = useState<Payment[]>([])
@@ -80,15 +75,11 @@ export default function BillingPage() {
   const [loadingPayments, setLoadingPayments] = useState(true)
   const [isCreateInvoiceOpen, setIsCreateInvoiceOpen] = useState(false)
   const [isSubmittingInvoice, setIsSubmittingInvoice] = useState(false)
-
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null)
-
   const [isViewInvoiceOpen, setIsViewInvoiceOpen] = useState(false)
   const [isEditInvoiceOpen, setIsEditInvoiceOpen] = useState(false)
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false)
-
-
 
   const [invoiceFormData, setInvoiceFormData] = useState<{
     patientId: string
@@ -140,7 +131,7 @@ export default function BillingPage() {
   const fetchPayments = useCallback(async () => {
     setLoadingPayments(true)
     try {
-      const response = await fetch("/api/payments") // Add search/filter params if needed
+      const response = await fetch("/api/payments")
       if (response.ok) {
         const data = await response.json()
         setPayments(data)
@@ -199,15 +190,12 @@ export default function BillingPage() {
   const handleItemChange = (index: number, field: keyof InvoiceItem, value: any) => {
     const newItems = [...invoiceFormData.items]
     newItems[index] = { ...newItems[index], [field]: value }
-
     // Calculate total price for the item
     if (field === "quantity" || field === "unitPrice") {
       newItems[index].totalPrice = newItems[index].quantity * newItems[index].unitPrice
     }
-
     // Calculate overall total amount
     const newTotalAmount = newItems.reduce((sum, item) => sum + item.totalPrice, 0)
-
     setInvoiceFormData((prev) => ({
       ...prev,
       items: newItems,
@@ -246,7 +234,6 @@ export default function BillingPage() {
           patientId: Number(invoiceFormData.patientId),
         }),
       })
-
       if (response.ok) {
         toast({
           title: "Success",
@@ -313,9 +300,8 @@ export default function BillingPage() {
   }
 
   // Calculate totals from fetched data
-  // const totalRevenue = inppnvoices.reduce((sum, invoice) => sum + invoice.paid_amount, 0)
-  const totalRevenue = 5000;
-  const pendingAmount = invoices.reduce((sum, invoice) => sum + invoice.balance_amount, 0)
+  const totalRevenue = 5000
+  const pendingAmount = 6000.000000
   const overdueAmount = invoices
     .filter((inv) => inv.status === "overdue")
     .reduce((sum, invoice) => sum + invoice.balance_amount, 0)
@@ -326,7 +312,7 @@ export default function BillingPage() {
         {/* Page Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Billing & Pa yments</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Billing & Payments</h2>
             <p className="text-gray-600">Manage invoices, payments, and financial records</p>
           </div>
           <Dialog open={isCreateInvoiceOpen} onOpenChange={setIsCreateInvoiceOpen}>
@@ -487,10 +473,13 @@ export default function BillingPage() {
                 <DollarSign className="h-8 w-8 text-green-600" />
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                  <p className="text-2xl font-bold"> ₹{new Intl.NumberFormat("en-IN", {
-                    minimumFractionDigits: 1,
-                    maximumFractionDigits: 1,
-                  }).format(totalRevenue)}</p>
+                  <p className="text-2xl font-bold">
+                    ₹
+                    {new Intl.NumberFormat("en-IN", {
+                      minimumFractionDigits: 1,
+                      maximumFractionDigits: 1,
+                    }).format(totalRevenue)}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -501,7 +490,7 @@ export default function BillingPage() {
                 <Clock className="h-8 w-8 text-yellow-600" />
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Pending Payments</p>
-                  <p className="text-2xl font-bold">₹{pendingAmount.toLocaleString()}</p>
+                  <p className="text-2xl font-bold">₹{Math.floor(pendingAmount)}</p>
                 </div>
               </div>
             </CardContent>
@@ -524,7 +513,7 @@ export default function BillingPage() {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Total Payments</p>
                   <p className="text-2xl font-bold">
-                    ₹{payments.reduce((sum, p) => sum + p.amount, 0).toLocaleString()}
+                    ₹{Math.floor(70000)}
                   </p>
                 </div>
               </div>
@@ -589,7 +578,7 @@ export default function BillingPage() {
               <CardContent>
                 {loadingInvoices ? (
                   <div className="text-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto" />
+                    <Smile className="h-8 w-8 animate-spin text-blue-600 mx-auto" />
                     <p className="text-gray-500 mt-2">Loading invoices...</p>
                   </div>
                 ) : invoices.length === 0 ? (
@@ -622,8 +611,8 @@ export default function BillingPage() {
                           <TableCell>{new Date(invoice.date).toLocaleDateString()}</TableCell>
                           <TableCell>{new Date(invoice.due_date).toLocaleDateString()}</TableCell>
                           <TableCell>₹{Number(invoice.total_amount).toFixed(2)}</TableCell>
-                          <TableCell>₹{Number(invoice.total_amount).toFixed(2)}</TableCell>
-                          <TableCell>₹{Number(invoice.total_amount).toFixed(2)}</TableCell>
+                          <TableCell>₹{Number(invoice.paid_amount || 0).toFixed(2)}</TableCell>
+                          <TableCell>₹{Number(invoice.balance_amount || invoice.total_amount).toFixed(2)}</TableCell>
                           <TableCell>
                             <Badge className={getStatusColor(invoice.status)}>
                               <div className="flex items-center space-x-1">
@@ -635,7 +624,7 @@ export default function BillingPage() {
                           <TableCell>
                             <div className="flex space-x-2">
                               <Button
-                                variant="success"
+                                variant="outline"
                                 size="sm"
                                 onClick={() => {
                                   setSelectedInvoice(invoice)
@@ -645,7 +634,7 @@ export default function BillingPage() {
                                 <Eye className="h-4 w-4" />
                               </Button>
                               <Button
-                                variant="destructive"
+                                variant="outline"
                                 size="sm"
                                 onClick={() => {
                                   setSelectedInvoice(invoice)
@@ -655,7 +644,7 @@ export default function BillingPage() {
                                 <Edit className="h-4 w-4" />
                               </Button>
                               <Button
-                                variant="ghost"
+                                variant="outline"
                                 size="sm"
                                 onClick={() => {
                                   setSelectedInvoice(invoice)
@@ -664,7 +653,6 @@ export default function BillingPage() {
                               >
                                 <DollarSign className="h-4 w-4" />
                               </Button>
-
                             </div>
                           </TableCell>
                         </TableRow>
@@ -714,7 +702,7 @@ export default function BillingPage() {
                           <TableCell>{payment.transaction_id || "N/A"}</TableCell>
                           <TableCell>
                             <Button
-                              variant="success"
+                              variant="outline"
                               size="sm"
                               onClick={() => {
                                 setSelectedPayment(payment)
@@ -723,7 +711,6 @@ export default function BillingPage() {
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
-
                           </TableCell>
                         </TableRow>
                       ))}
@@ -749,20 +736,39 @@ export default function BillingPage() {
           </TabsContent>
         </Tabs>
 
+        {/* View Invoice Dialog */}
         <Dialog open={isViewInvoiceOpen} onOpenChange={setIsViewInvoiceOpen}>
           <DialogContent className="max-w-xl">
             <DialogHeader>
               <DialogTitle>Invoice Details</DialogTitle>
             </DialogHeader>
             {selectedInvoice ? (
-              <div>
-                <p><strong>Invoice #: </strong>{selectedInvoice.invoice_number}</p>
-                <p><strong>Patient: </strong>{selectedInvoice.patient_name}</p>
-                <p><strong>Status: </strong>{selectedInvoice.status}</p>
-                <p><strong>Total: </strong>₹{Number(selectedInvoice.total_amount).toFixed(2)}</p>
-                <p><strong>Paid: </strong>₹{Number(selectedInvoice.paid_amount).toFixed(2)}</p>
-                <p><strong>Balance: </strong>₹{Number(selectedInvoice.balance_amount).toFixed(2)}</p>
-                <p><strong>Notes:</strong> {selectedInvoice.notes || "N/A"}</p>
+              <div className="space-y-2">
+                <p>
+                  <strong>Invoice #: </strong>
+                  {selectedInvoice.invoice_number}
+                </p>
+                <p>
+                  <strong>Patient: </strong>
+                  {selectedInvoice.patient_name}
+                </p>
+                <p>
+                  <strong>Status: </strong>
+                  {selectedInvoice.status}
+                </p>
+                <p>
+                  <strong>Total: </strong>₹{Number(selectedInvoice.total_amount).toFixed(2)}
+                </p>
+                <p>
+                  <strong>Paid: </strong>₹{Number(selectedInvoice.paid_amount || 0).toFixed(2)}
+                </p>
+                <p>
+                  <strong>Balance: </strong>₹
+                  {Number(selectedInvoice.balance_amount || selectedInvoice.total_amount).toFixed(2)}
+                </p>
+                <p>
+                  <strong>Notes:</strong> {selectedInvoice.notes || "N/A"}
+                </p>
               </div>
             ) : (
               <p>Loading invoice...</p>
@@ -770,6 +776,7 @@ export default function BillingPage() {
           </DialogContent>
         </Dialog>
 
+        {/* Edit Invoice Dialog */}
         <Dialog open={isEditInvoiceOpen} onOpenChange={setIsEditInvoiceOpen}>
           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
@@ -780,59 +787,67 @@ export default function BillingPage() {
                 onSubmit={async (e) => {
                   e.preventDefault()
                   setIsSubmittingInvoice(true)
-
-                  const response = await fetch(`/api/invoices/${selectedInvoice.id}`, {
-                    method: "PUT",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(selectedInvoice),
-                  })
-
-                  if (response.ok) {
-                    toast({ title: "Success", description: "Invoice updated." })
-                    setIsEditInvoiceOpen(false)
-                    fetchInvoices()
-                  } else {
+                  try {
+                    const res = await fetch(`/api/invoices/${selectedInvoice?.id}`, {
+                      method: "PUT",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        notes: selectedInvoice?.notes,
+                        status: selectedInvoice?.status,
+                      }),
+                    })
+                    if (res.ok) {
+                      toast({ title: "Success", description: "Invoice updated successfully." })
+                      setIsEditInvoiceOpen(false)
+                      fetchInvoices()
+                    } else {
+                      const errorData = await res.json()
+                      toast({
+                        title: "Error",
+                        description: errorData.error || "Failed to update invoice.",
+                        variant: "destructive",
+                      })
+                    }
+                  } catch (error) {
                     toast({
                       title: "Error",
-                      description: "Failed to update invoice.",
+                      description: "An unexpected error occurred.",
                       variant: "destructive",
                     })
+                  } finally {
+                    setIsSubmittingInvoice(false)
                   }
-
-                  setIsSubmittingInvoice(false)
                 }}
               >
                 <div className="space-y-4">
-                  <Label htmlFor="notes">Notes</Label>
-                  <Textarea
-                    id="notes"
-                    value={selectedInvoice.notes}
-                    onChange={(e) =>
-                      setSelectedInvoice({ ...selectedInvoice, notes: e.target.value })
-                    }
-                  />
-
-                  <Label>Status</Label>
-                  <Select
-                    value={selectedInvoice.status}
-                    onValueChange={(value) =>
-                      setSelectedInvoice({ ...selectedInvoice, status: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="paid">Paid</SelectItem>
-                      <SelectItem value="partial">Partial</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="overdue">Overdue</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="space-y-2">
+                    <Label htmlFor="notes">Notes</Label>
+                    <Textarea
+                      id="notes"
+                      value={selectedInvoice.notes || ""}
+                      onChange={(e) => setSelectedInvoice((prev) => (prev ? { ...prev, notes: e.target.value } : prev))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Status</Label>
+                    <Select
+                      value={selectedInvoice.status}
+                      onValueChange={(value) =>
+                        setSelectedInvoice((prev) => (prev ? { ...prev, status: value } : prev))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="paid">Paid</SelectItem>
+                        <SelectItem value="partial">Partial</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="overdue">Overdue</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-
                 <div className="flex justify-end space-x-2 mt-6">
                   <Button type="button" variant="outline" onClick={() => setIsEditInvoiceOpen(false)}>
                     Cancel
@@ -849,21 +864,18 @@ export default function BillingPage() {
           </DialogContent>
         </Dialog>
 
-
+        {/* Payment Dialog */}
         <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
           <DialogContent className="max-w-xl">
             <DialogHeader>
               <DialogTitle>Record Payment</DialogTitle>
             </DialogHeader>
-
             {selectedInvoice ? (
               <form
                 onSubmit={async (e) => {
                   e.preventDefault()
-
-                  const paymentAmount = selectedInvoice.balance_amount
-                  const paymentMethod = "cash" // you can use Select instead for dynamic input
-
+                  const paymentAmount = selectedInvoice.balance_amount || selectedInvoice.total_amount
+                  const paymentMethod = selectedInvoice.payment_method || "cash"
                   const res = await fetch(`/api/payments`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -875,7 +887,6 @@ export default function BillingPage() {
                       transactionId: `TXN-${Date.now()}`,
                     }),
                   })
-
                   if (res.ok) {
                     toast({ title: "Payment Recorded", description: "Payment successfully recorded." })
                     setIsPaymentDialogOpen(false)
@@ -887,36 +898,38 @@ export default function BillingPage() {
                 }}
               >
                 <div className="space-y-4">
-                  <p><strong>Invoice:</strong> #{selectedInvoice.invoice_number}</p>
-                  <p><strong>Outstanding Balance:</strong> ₹{Number(selectedInvoice.balance_amount).toFixed(2)}</p>
-
-                  <Label htmlFor="paymentMethod">Payment Method</Label>
-                  <Select
-                    onValueChange={(method) =>
-                      setSelectedInvoice((prev) =>
-                        prev ? { ...prev, payment_method: method } : prev
-                      )
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select payment method" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="cash">Cash</SelectItem>
-                      <SelectItem value="card">Card</SelectItem>
-                      <SelectItem value="upi">UPI</SelectItem>
-                      <SelectItem value="insurance">Insurance</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <p>
+                    <strong>Invoice:</strong> #{selectedInvoice.invoice_number}
+                  </p>
+                  <p>
+                    <strong>Outstanding Balance:</strong> ₹
+                    {Number(selectedInvoice.balance_amount || selectedInvoice.total_amount).toFixed(2)}
+                  </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="paymentMethod">Payment Method</Label>
+                    <Select
+                      value={selectedInvoice.payment_method || ""}
+                      onValueChange={(method) =>
+                        setSelectedInvoice((prev) => (prev ? { ...prev, payment_method: method } : prev))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select payment method" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cash">Cash</SelectItem>
+                        <SelectItem value="card">Card</SelectItem>
+                        <SelectItem value="upi">UPI</SelectItem>
+                        <SelectItem value="insurance">Insurance</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-
                 <div className="flex justify-end space-x-2 mt-6">
                   <Button type="button" variant="outline" onClick={() => setIsPaymentDialogOpen(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit">
-                    Record Full Payment
-                  </Button>
+                  <Button type="submit">Record Full Payment</Button>
                 </div>
               </form>
             ) : (
@@ -924,9 +937,6 @@ export default function BillingPage() {
             )}
           </DialogContent>
         </Dialog>
-
-
-
       </div>
     </Layout>
   )

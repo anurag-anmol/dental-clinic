@@ -3,18 +3,20 @@ import { query } from "@/lib/db"
 import { getCurrentUser } from "@/lib/auth"
 import { hasPermission, PERMISSIONS } from "@/lib/permissions"
 
-export async function GET(request: NextRequest, context: { params: { id: string } }) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser()
     if (!user || !hasPermission(user.role, PERMISSIONS.TREATMENTS_VIEW)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { id } = context.params
+    const { id } = await context.params // ✅ Await params
+
     const treatment = (await query(
-      `SELECT t.*, 
-        CONCAT(p.first_name, ' ', p.last_name) as patient_name,
+      `SELECT t.*,
+         CONCAT(p.first_name, ' ', p.last_name) as patient_name,
         p.patient_id,
+        p.id as patient_db_id,
         CONCAT(u.first_name, ' ', u.last_name) as dentist_name,
         tp.diagnosis,
         tp.treatment_description as plan_description
@@ -42,106 +44,88 @@ export async function GET(request: NextRequest, context: { params: { id: string 
   }
 }
 
-// export async function PUT(request: NextRequest, context: { params: { id: string } }) {
-//   try {
-//     const user = await getCurrentUser()
-//     if (!user || !hasPermission(user.role, PERMISSIONS.TREATMENTS_EDIT)) {
-//       return NextResponse.json(
-//         { error: "Unauthorized - You don't have permission to edit treatments" },
-//         { status: 403 },
-//       )
-//     }
-
-//     const { id } = context.params
-//     const data = await request.json()
-
-//     // If user is dentist, ensure they can only edit their own treatments
-//     if (user.role === "dentist") {
-//       const existingTreatment = (await query("SELECT dentist_id FROM treatments WHERE id = ?", [id])) as any[]
-//       if (existingTreatment.length === 0 || existingTreatment[0].dentist_id !== user.id) {
-//         return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
-//       }
-//     }
-
-//     await query(
-//       `UPDATE treatments SET 
-//        patient_id = ?, dentist_id = ?, treatment_plan_id = ?, treatment_name = ?, 
-//        treatment_date = ?, tooth_number = ?, procedure_notes = ?, cost = ?, status = ?
-//        WHERE id = ?`,
-//       [
-//         data.patientId,
-//         data.dentistId,
-//         data.treatmentPlanId || null,
-//         data.treatmentName,
-//         data.treatmentDate,
-//         data.toothNumber || null,
-//         data.procedureNotes || null,
-//         data.cost || null,
-//         data.status,
-//         id,
-//       ],
-//     )
-//     console.log("update", data);
-//     console.log("updateId", id);
-
-
-//     return NextResponse.json({ message: "Treatment updated successfully" })
-//   } catch (error) {
-//     console.error("Error updating treatment:", error)
-//     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
-//   }
-// }
-
-export async function PUT(request: NextRequest, context: { params: { id: string } }) {
+export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser()
     if (!user || !hasPermission(user.role, PERMISSIONS.TREATMENTS_EDIT)) {
+      return NextResponse.json(
+        { error: "Unauthorized - You don't have permission to edit treatments" },
+        { status: 403 },
+      )
+    }
+
+    const { id } = await context.params // ✅ Await params
+    const body = await req.json()
+
+    console.log("update Body", body)
+
+    // Get current treatment to get the actual patient_id
+    const currentTreatment = (await query("SELECT patient_id, dentist_id FROM treatments WHERE id = ?", [id])) as any[]
+
+    if (currentTreatment.length === 0) {
+      return NextResponse.json({ error: "Treatment not found" }, { status: 404 })
+    }
+
+    // If user is dentist, ensure they can only edit their own treatments
+    if (user.role === "dentist" && currentTreatment[0].dentist_id !== user.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
-    const id = context.params
-    const data = await request.json()
 
-    // Validate required fields
-    if (!id || !data.patientId || !data.dentistId || !data.treatmentName || !data.treatmentDate) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
-    }
+    const {
+      patientId,
+      dentistId,
+      treatmentPlanId,
+      treatmentName,
+      treatmentDate,
+      toothNumber,
+      procedureNotes,
+      cost,
+      status,
+    } = body
 
-    // If dentist, check ownership
-    if (user.role === "dentist") {
-      const [row] = (await query("SELECT dentist_id FROM treatments WHERE id = ?", [id])) as any[]
-      if (!row || row.dentist_id !== user.id) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
-      }
-    }
+    // Use current patient_id if patientId is null or undefined
+    const finalPatientId = patientId || currentTreatment[0].patient_id
+    const finalDentistId = dentistId || currentTreatment[0].dentist_id
 
-    await query(
-      `UPDATE treatments SET 
-       patient_id = ?, dentist_id = ?, treatment_plan_id = ?, treatment_name = ?, 
-       treatment_date = ?, tooth_number = ?, procedure_notes = ?, cost = ?, status = ?
-       WHERE id = ?`,
+    console.log("Updating treatment with patient_id:", finalPatientId)
+
+    const result = await query(
+      `
+      UPDATE treatments
+      SET
+        patient_id = ?,
+        dentist_id = ?,
+        treatment_plan_id = ?,
+        treatment_name = ?,
+        treatment_date = ?,
+        tooth_number = ?,
+        procedure_notes = ?,
+        cost = ?,
+        status = ?
+      WHERE id = ?
+      `,
       [
-        data.patientId,
-        data.dentistId,
-        data.treatmentPlanId || null,
-        data.treatmentName,
-        data.treatmentDate,
-        data.toothNumber || null,
-        data.procedureNotes || null,
-        data.cost !== undefined && data.cost !== '' ? Number(data.cost) : null,
-        data.status,
+        finalPatientId,
+        finalDentistId,
+        treatmentPlanId || null,
+        treatmentName,
+        treatmentDate,
+        toothNumber || null,
+        procedureNotes || null,
+        cost || null,
+        status,
         id,
       ],
     )
 
-    return NextResponse.json({ message: "Treatment updated successfully" })
-  } catch (error) {
-    console.error("Error updating treatment:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ success: true, result })
+  } catch (err: any) {
+    console.error("Update error:", err)
+    return NextResponse.json({ error: "Failed to update treatment." }, { status: 500 })
   }
 }
 
-
-export async function DELETE(request: NextRequest, context: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser()
     if (!user || !hasPermission(user.role, PERMISSIONS.TREATMENTS_DELETE)) {
@@ -151,7 +135,7 @@ export async function DELETE(request: NextRequest, context: { params: { id: stri
       )
     }
 
-    const { id } = context.params
+    const { id } = await context.params // ✅ Await params
 
     // If user is dentist, ensure they can only delete their own treatments
     if (user.role === "dentist") {
@@ -168,3 +152,4 @@ export async function DELETE(request: NextRequest, context: { params: { id: stri
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
+

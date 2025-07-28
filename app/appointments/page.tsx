@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import type React from "react"
 import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,6 +22,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar, Plus, Edit, Clock, User, Search, Filter, Loader2, Smile } from "lucide-react"
 import { Layout } from "@/components/layout"
 import { useToast } from "@/hooks/use-toast"
+import { AppointmentForm } from "./AppointmentForm"
+import { useSelectedLayoutSegment } from "next/navigation"
 
 interface Appointment {
   id: number
@@ -51,6 +54,80 @@ interface Dentist {
 }
 
 export default function AppointmentsPage() {
+
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editingAppointmentId, setEditingAppointmentId] = useState<number | null>(null)
+  const [editFormData, setEditFormData] = useState({
+    patientId: "",
+    dentistId: "",
+    appointmentDate: "",
+    appointmentTime: "",
+    duration: "60",
+    treatmentType: "",
+    status: "scheduled",
+    notes: "",
+  })
+  const openEditDialog = async (id: number) => {
+    try {
+      const res = await fetch(`/api/appointments/${id}`)
+      if (res.ok) {
+        const data = await res.json()
+        setEditingAppointmentId(id)
+        setEditFormData({
+          patientId: data.patient_id.toString(),
+          dentistId: data.dentist_id.toString(),
+          appointmentDate: data.appointment_date,
+          appointmentTime: data.appointment_time,
+          duration: data.duration_minutes.toString(),
+          treatmentType: data.treatment_type || "",
+          status: data.status || "scheduled",
+          notes: data.notes || "",
+        })
+        fetchPatients()
+        fetchDentists()
+        setIsEditDialogOpen(true)
+      } else {
+        toast({ title: "Error", description: "Failed to fetch appointment details", variant: "destructive" })
+      }
+    } catch (err) {
+      console.error(err)
+      toast({ title: "Error", description: "Something went wrong", variant: "destructive" })
+    }
+  }
+  const handleEditChange = (field: string, value: string) => {
+    setEditFormData((prev) => ({ ...prev, [field]: value }))
+  }
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingAppointmentId) return
+    setIsSubmitting(true)
+    try {
+      const res = await fetch(`/api/appointments/${editingAppointmentId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...editFormData,
+          patientId: Number(editFormData.patientId),
+          dentistId: Number(editFormData.dentistId),
+          duration: Number(editFormData.duration),
+        }),
+      })
+      if (res.ok) {
+        toast({ title: "Updated", description: "Appointment updated successfully." })
+        setIsEditDialogOpen(false)
+        fetchAppointments()
+      } else {
+        const errorData = await res.json()
+        toast({ title: "Error", description: errorData.error || "Update failed", variant: "destructive" })
+      }
+    } catch (error) {
+      console.error(error)
+      toast({ title: "Error", description: "Something went wrong", variant: "destructive" })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   const { toast } = useToast()
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0])
@@ -63,6 +140,7 @@ export default function AppointmentsPage() {
   const [loading, setLoading] = useState(true)
   const [isAddAppointmentOpen, setIsAddAppointmentOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
 
   const [formData, setFormData] = useState({
     patientId: "",
@@ -518,15 +596,12 @@ export default function AppointmentsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex space-x-2">
-                          <Button variant="success" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="destructive" size="sm">
-                            <Calendar className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        <Button variant="success" size="sm" onClick={() => openEditDialog(appointment.id)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
                       </TableCell>
+
+
                     </TableRow>
                   ))}
                 </TableBody>
@@ -534,6 +609,92 @@ export default function AppointmentsPage() {
             )}
           </CardContent>
         </Card>
+
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Appointment</DialogTitle>
+              <DialogDescription>Update appointment details</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleEditSubmit}>
+              <div className="grid grid-cols-2 gap-4 py-4">
+                <div className="space-y-2">
+                  <Label>Patient *</Label>
+                  <Select value={editFormData.patientId} onValueChange={(v) => handleEditChange("patientId", v)}>
+                    <SelectTrigger><SelectValue placeholder="Select patient" /></SelectTrigger>
+                    <SelectContent>
+                      {patients.map((p) => (
+                        <SelectItem key={p.id} value={p.id.toString()}>
+                          {p.first_name} {p.last_name} ({p.patient_id})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Dentist *</Label>
+                  <Select value={editFormData.dentistId} onValueChange={(v) => handleEditChange("dentistId", v)}>
+                    <SelectTrigger><SelectValue placeholder="Select dentist" /></SelectTrigger>
+                    <SelectContent>
+                      {dentists.map((d) => (
+                        <SelectItem key={d.id} value={d.id.toString()}>
+                          Dr. {d.first_name} {d.last_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Date *</Label>
+                  <Input type="date" value={editFormData.appointmentDate} onChange={(e) => handleEditChange("appointmentDate", e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Time *</Label>
+                  <Input type="time" value={editFormData.appointmentTime} onChange={(e) => handleEditChange("appointmentTime", e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Duration *</Label>
+                  <Select value={editFormData.duration} onValueChange={(v) => handleEditChange("duration", v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {["30", "45", "60", "90", "120"].map((d) => (
+                        <SelectItem key={d} value={d}>{d} minutes</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Treatment</Label>
+                  <Input value={editFormData.treatmentType} onChange={(e) => handleEditChange("treatmentType", e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Status</Label>
+                  <Select value={editFormData.status} onValueChange={(v) => handleEditChange("status", v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {["scheduled", "confirmed", "in-progress", "completed", "cancelled", "no_show"].map((status) => (
+                        <SelectItem key={status} value={status}>{status.replace("_", " ")}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-2 space-y-2">
+                  <Label>Notes</Label>
+                  <Textarea value={editFormData.notes} onChange={(e) => handleEditChange("notes", e.target.value)} />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Update
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+
       </div>
     </Layout>
   )

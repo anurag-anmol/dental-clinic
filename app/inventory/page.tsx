@@ -18,7 +18,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Progress } from "@/components/ui/progress"
-import { Package, Plus, Edit, AlertTriangle, Search, TrendingDown, TrendingUp, Loader2 } from "lucide-react"
+import { Package, Plus, Edit, AlertTriangle, Search, TrendingDown, TrendingUp, Loader2, Smile } from "lucide-react"
 import { Layout } from "@/components/layout"
 import { useToast } from "@/hooks/use-toast"
 
@@ -424,7 +424,7 @@ export default function InventoryPage() {
           <CardContent>
             {loading ? (
               <div className="text-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto" />
+                <Smile className="h-8 w-8 animate-spin text-blue-600 mx-auto" />
                 <p className="text-gray-500 mt-2">Loading inventory...</p>
               </div>
             ) : inventoryItems.length === 0 ? (

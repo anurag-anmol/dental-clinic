@@ -3,16 +3,17 @@ import { query, transaction } from "@/lib/db"
 import { getCurrentUser } from "@/lib/auth"
 import { hasPermission, PERMISSIONS } from "@/lib/permissions"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser()
     if (!user || !hasPermission(user.role, PERMISSIONS.BILLING_VIEW)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { id } = params
+    const { id } = await context.params // ✅ Await params for Next.js 15
+
     const invoice = (await query(
-      `SELECT i.*, 
+      `SELECT i.*,
         CONCAT(p.first_name, ' ', p.last_name) as patient_name,
         p.patient_id
       FROM invoices i
@@ -26,7 +27,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
 
     const items = await query("SELECT * FROM invoice_items WHERE invoice_id = ?", [id])
-
     return NextResponse.json({ ...invoice[0], items })
   } catch (error) {
     console.error("Error fetching invoice:", error)
@@ -34,28 +34,37 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser()
     if (!user || !hasPermission(user.role, PERMISSIONS.BILLING_EDIT)) {
       return NextResponse.json({ error: "Unauthorized - You don't have permission to edit invoices" }, { status: 403 })
     }
 
-    const { id } = params
+    const { id } = await context.params // ✅ Await params for Next.js 15
     const data = await request.json()
 
+    console.log("Updating invoice with data:", data)
+
+    // ✅ Handle simple update (notes and status only)
+    if (data.notes !== undefined && data.status !== undefined && Object.keys(data).length === 2) {
+      await query(`UPDATE invoices SET notes = ?, status = ? WHERE id = ?`, [data.notes, data.status, id])
+      return NextResponse.json({ message: "Invoice updated successfully" })
+    }
+
+    // ✅ Handle full update (for complex invoice updates)
     await transaction(async (connection) => {
       // Update invoice details
       await connection.execute(
-        `UPDATE invoices SET 
-         patient_id = ?, total_amount = ?, paid_amount = ?, balance_amount = ?, 
-         status = ?, due_date = ?, payment_method = ?, notes = ?
+        `UPDATE invoices SET
+          patient_id = ?, total_amount = ?, paid_amount = ?, balance_amount = ?,
+          status = ?, due_date = ?, payment_method = ?, notes = ?
          WHERE id = ?`,
         [
           data.patientId,
           data.totalAmount,
-          data.paidAmount,
-          data.balanceAmount,
+          data.paidAmount || 0,
+          data.balanceAmount || data.totalAmount,
           data.status,
           data.dueDate,
           data.paymentMethod || null,
@@ -64,14 +73,17 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         ],
       )
 
-      // Delete existing items and insert new ones
-      await connection.execute("DELETE FROM invoice_items WHERE invoice_id = ?", [id])
-      for (const item of data.items) {
-        await connection.execute(
-          `INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, total_price) 
-           VALUES (?, ?, ?, ?, ?)`,
-          [id, item.description, item.quantity, item.unitPrice, item.totalPrice],
-        )
+      // Update items if provided
+      if (data.items && data.items.length > 0) {
+        // Delete existing items and insert new ones
+        await connection.execute("DELETE FROM invoice_items WHERE invoice_id = ?", [id])
+        for (const item of data.items) {
+          await connection.execute(
+            `INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, total_price)
+              VALUES (?, ?, ?, ?, ?)`,
+            [id, item.description, item.quantity, item.unitPrice, item.totalPrice],
+          )
+        }
       }
     })
 
@@ -82,7 +94,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser()
     if (!user || !hasPermission(user.role, PERMISSIONS.BILLING_DELETE)) {
@@ -92,7 +104,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       )
     }
 
-    const { id } = params
+    const { id } = await context.params // ✅ Await params for Next.js 15
 
     await transaction(async (connection) => {
       // Delete associated payments first

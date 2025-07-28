@@ -3,16 +3,16 @@ import { query } from "@/lib/db"
 import { getCurrentUser } from "@/lib/auth"
 import { hasPermission, PERMISSIONS } from "@/lib/permissions"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: Request, context: { params: { id: string } }) {
   try {
     const user = await getCurrentUser()
     if (!user || !hasPermission(user.role, PERMISSIONS.APPOINTMENTS_VIEW)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { id } = params
+    const { id } = context.params
     const appointment = (await query(
-      `SELECT a.*, 
+      `SELECT a.*,
         CONCAT(p.first_name, ' ', p.last_name) as patient_name,
         p.patient_id,
         CONCAT(u.first_name, ' ', u.last_name) as dentist_name
@@ -39,17 +39,14 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, context: { params: { id: string } }) {
   try {
     const user = await getCurrentUser()
     if (!user || !hasPermission(user.role, PERMISSIONS.APPOINTMENTS_EDIT)) {
-      return NextResponse.json(
-        { error: "Unauthorized - You don't have permission to edit appointments" },
-        { status: 403 },
-      )
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
-    const { id } = params
+    const { id } = context.params
     const data = await request.json()
 
     const {
@@ -63,42 +60,23 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       notes,
     } = data
 
-    // Validate required fields
     if (!patientId || !dentistId || !appointmentDate || !appointmentTime || !duration) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    // If user is dentist, ensure they can only edit their own appointments
     if (user.role === "dentist") {
-      const existingAppointment = (await query("SELECT dentist_id FROM appointments WHERE id = ?", [id])) as any[]
-      if (existingAppointment.length === 0 || existingAppointment[0].dentist_id !== user.id) {
+      const existing = await query("SELECT dentist_id FROM appointments WHERE id = ?", [id]) as any[]
+      if (existing.length === 0 || existing[0].dentist_id !== user.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
       }
     }
 
-    // Execute update
     await query(
       `UPDATE appointments SET 
-        patient_id = ?, 
-        dentist_id = ?, 
-        appointment_date = ?, 
-        appointment_time = ?, 
-        duration_minutes = ?, 
-        treatment_type = ?, 
-        status = ?, 
-        notes = ?
-       WHERE id = ?`,
-      [
-        patientId,
-        dentistId,
-        appointmentDate,
-        appointmentTime,
-        duration,
-        treatmentType ?? null, // Convert undefined → null
-        status ?? null,
-        notes ?? null,
-        id,
-      ]
+        patient_id = ?, dentist_id = ?, appointment_date = ?, 
+        appointment_time = ?, duration_minutes = ?, treatment_type = ?, 
+        status = ?, notes = ? WHERE id = ?`,
+      [patientId, dentistId, appointmentDate, appointmentTime, duration, treatmentType ?? null, status ?? null, notes ?? null, id]
     )
 
     return NextResponse.json({ message: "Appointment updated successfully" })
@@ -108,7 +86,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, context: { params: { id: string } }) {
   try {
     const user = await getCurrentUser()
     if (!user || !hasPermission(user.role, PERMISSIONS.APPOINTMENTS_DELETE)) {
@@ -118,7 +96,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       )
     }
 
-    const { id } = params
+    const { id } = context.params
 
     // If user is dentist, ensure they can only delete their own appointments
     if (user.role === "dentist") {

@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Layout } from "@/components/layout"
-import { DollarSign, Users, Calendar, Activity } from "lucide-react"
+import { DollarSign, Users, Calendar, Activity, Smile } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2 } from "lucide-react"
@@ -77,7 +77,7 @@ export default function ReportsPage() {
       <Layout>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto" />
+            <Smile className="h-8 w-8 animate-spin text-blue-600 mx-auto" />
             <p className="text-gray-500 mt-2">Loading reports...</p>
           </div>
         </div>

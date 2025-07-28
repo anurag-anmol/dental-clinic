@@ -1,30 +1,7 @@
 "use client"
-
-// import type React from "react"
-// import { useState, useEffect, useCallback } from "react"
-// import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-// import { Button } from "@/components/ui/button"
-// import { Input } from "@/components/ui/input"
-// import { Badge } from "@/components/ui/badge"
-// import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-// import {
-//   Dialog,
-//   DialogContent,
-//   DialogDescription,
-//   DialogHeader,
-//   DialogTitle,
-//   DialogTrigger,
-// } from "@/components/ui/dialog"
-// import { Label } from "@/components/ui/label"
-// import { Textarea } from "@/components/ui/textarea"
-// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-// import { Search, Plus, Edit, Eye, Activity, CheckCircle, Clock, Loader2 } from "lucide-react"
-// import { Layout } from "@/components/layout"
-// import { useToast } from "@/hooks/use-toast"
-
 import type React from "react"
 import { useState, useEffect, useCallback } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -48,7 +25,8 @@ interface Treatment {
   id: number
   patient_name: string
   patient_id: string
-  dentist_id: number // <-- Add this line
+  patient_db_id: number // ✅ Add this for the actual database ID
+  dentist_id: number
   dentist_name: string
   treatment_name: string
   treatment_date: string
@@ -78,18 +56,16 @@ export default function TreatmentsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedStatus, setSelectedStatus] = useState("all")
   const [selectedPatient, setSelectedPatient] = useState("all")
-
   const [treatments, setTreatments] = useState<Treatment[]>([])
   const [patients, setPatients] = useState<Patient[]>([])
   const [dentists, setDentists] = useState<Dentist[]>([])
   const [loading, setLoading] = useState(true)
   const [isAddTreatmentOpen, setIsAddTreatmentOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-
   const [formData, setFormData] = useState({
     patientId: "",
     dentistId: "",
-    treatmentPlanId: "", // Not currently used in form, but in API
+    treatmentPlanId: "",
     treatmentName: "",
     treatmentDate: new Date().toISOString().split("T")[0],
     toothNumber: "",
@@ -196,7 +172,6 @@ export default function TreatmentsPage() {
           cost: formData.cost ? Number(formData.cost) : null,
         }),
       })
-
       if (response.ok) {
         toast({
           title: "Success",
@@ -287,27 +262,6 @@ export default function TreatmentsPage() {
     setSelectedTreatment((prev: any) => ({ ...prev, [field]: value }))
   }
 
-  // const handleUpdateTreatment = async () => {
-  //   try {
-  //     const res = await fetch(`/api/treatments/${selectedTreatment?.id}`, {
-  //       method: "PUT",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify(selectedTreatment),
-  //     })
-  //     if (res.ok) {
-  //       toast({ title: "Success", description: "Treatment updated." })
-  //       setEditDialogOpen(false)
-  //       fetchTreatments()
-  //     } else {
-  //       toast({ title: "Error", description: "Update failed.", variant: "destructive" })
-  //     }
-  //   } catch (e) {
-  //     toast({ title: "Error", description: "Unexpected error.", variant: "destructive" })
-  //   }
-  // }
-
   const handleUpdateTreatment = async () => {
     try {
       const res = await fetch(`/api/treatments/${selectedTreatment?.id}`, {
@@ -316,8 +270,9 @@ export default function TreatmentsPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-
-          dentistId: Number(selectedTreatment?.dentist_id), // ✅ Use correct ID
+          patientId: selectedTreatment?.patient_db_id, // ✅ Use patient_db_id instead of patient_id
+          dentistId: Number(selectedTreatment?.dentist_id),
+          treatmentPlanId: null,
           treatmentName: selectedTreatment?.treatment_name,
           treatmentDate: selectedTreatment?.treatment_date,
           toothNumber: selectedTreatment?.tooth_number || null,
@@ -326,22 +281,18 @@ export default function TreatmentsPage() {
           status: selectedTreatment?.status,
         }),
       })
-      console.log(selectedTreatment?.id);
-
       if (res.ok) {
-        toast({ title: "Success", description: "Treatment updated." })
+        toast({ title: "Success", description: "Treatment updated successfully." })
         setEditDialogOpen(false)
         fetchTreatments()
       } else {
         const error = await res.json()
         toast({ title: "Error", description: error.message || "Update failed.", variant: "destructive" })
       }
-    } catch (e) {
-      toast({ title: "Error", description: "Unexpected error.", variant: "destructive" })
+    } catch (error) {
+      toast({ title: "Error", description: "Unexpected error occurred.", variant: "destructive" })
     }
   }
-
-
 
   return (
     <Layout>
@@ -567,82 +518,6 @@ export default function TreatmentsPage() {
           </CardContent>
         </Card>
 
-        {/* Treatments Table */}
-        {/* <Card>
-          <CardHeader>
-            <CardTitle>Treatment Records</CardTitle>
-            <CardDescription>{treatments.length} treatments found</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="text-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto" />
-                <p className="text-gray-500 mt-2">Loading treatments...</p>
-              </div>
-            ) : treatments.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">No treatments found for the selected criteria.</div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Patient</TableHead>
-                    <TableHead>Treatment</TableHead>
-                    <TableHead>Dentist</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Tooth</TableHead>
-                    <TableHead>Cost</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {treatments.map((treatment: any) => (
-                    <TableRow key={treatment.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{treatment.patient_name}</div>
-                          <div className="text-sm text-gray-500">{treatment.patient_id}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{treatment.treatment_name}</div>
-                          {treatment.diagnosis && <div className="text-sm text-gray-500">{treatment.diagnosis}</div>}
-                        </div>
-                      </TableCell>
-                      <TableCell>{treatment.dentist_name}</TableCell>
-                      <TableCell>{new Date(treatment.treatment_date).toLocaleDateString()}</TableCell>
-                      <TableCell>{treatment.tooth_number || "N/A"}</TableCell>
-                      <TableCell>
-                        {treatment.cost ? `$${Number.parseFloat(treatment.cost).toFixed(2)}` : "N/A"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getStatusColor(treatment.status)}>
-                          <div className="flex items-center space-x-1">
-                            {getStatusIcon(treatment.status)}
-                            <span>{treatment.status.replace("_", " ")}</span>
-                          </div>
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card> */}
-
-
         <Card>
           <CardHeader>
             <CardTitle>Treatment Records</CardTitle>
@@ -673,10 +548,10 @@ export default function TreatmentsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button variant="success" size="sm" onClick={() => handleOpenView(treatment)}>
+                        <Button variant="outline" size="sm" onClick={() => handleOpenView(treatment)}>
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleOpenEdit(treatment)}>
+                        <Button variant="outline" size="sm" onClick={() => handleOpenEdit(treatment)}>
                           <Edit className="h-4 w-4" />
                         </Button>
                       </div>
@@ -696,19 +571,28 @@ export default function TreatmentsPage() {
             </DialogHeader>
             {selectedTreatment && (
               <div className="space-y-2">
-                <p><strong>Patient:</strong> {selectedTreatment.patient_name}</p>
-                <p><strong>Treatment:</strong> {selectedTreatment.treatment_name}</p>
-                <p><strong>Date:</strong> {selectedTreatment.treatment_date}</p>
-                <p><strong>Status:</strong> {selectedTreatment.status}</p>
-                <p><strong>Notes:</strong> {selectedTreatment.procedure_notes || "N/A"}</p>
-                <p><strong>Tooth No:</strong> {selectedTreatment.tooth_number || "N/A"}</p>
+                <p>
+                  <strong>Patient:</strong> {selectedTreatment.patient_name}
+                </p>
+                <p>
+                  <strong>Treatment:</strong> {selectedTreatment.treatment_name}
+                </p>
+                <p>
+                  <strong>Date:</strong> {selectedTreatment.treatment_date}
+                </p>
+                <p>
+                  <strong>Status:</strong> {selectedTreatment.status}
+                </p>
+                <p>
+                  <strong>Notes:</strong> {selectedTreatment.procedure_notes || "N/A"}
+                </p>
+                <p>
+                  <strong>Tooth No:</strong> {selectedTreatment.tooth_number || "N/A"}
+                </p>
                 <p>
                   <strong>Cost:</strong>{" "}
-                  {typeof selectedTreatment.cost === "number"
-                    ? `$${selectedTreatment.cost.toFixed(2)}`
-                    : "N/A"}
+                  {typeof selectedTreatment.cost === "number" ? `$${selectedTreatment.cost.toFixed(2)}` : "N/A"}
                 </p>
-
               </div>
             )}
           </DialogContent>
@@ -716,34 +600,87 @@ export default function TreatmentsPage() {
 
         {/* Edit Dialog */}
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-          <DialogContent>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Treatment</DialogTitle>
               <DialogDescription>Update treatment details below.</DialogDescription>
             </DialogHeader>
             {selectedTreatment && (
-              <div className="space-y-4">
-                <Label htmlFor="edit-treatment-name">Treatment Name</Label>
-                <Input
-                  id="edit-treatment-name"
-                  value={selectedTreatment.treatment_name}
-                  onChange={(e) => handleEditChange("treatment_name", e.target.value)}
-                />
-                <Label htmlFor="edit-notes">Procedure Notes</Label>
-                <Textarea
-                  id="edit-notes"
-                  value={selectedTreatment.procedure_notes || ""}
-                  onChange={(e) => handleEditChange("procedure_notes", e.target.value)}
-                />
-                <div className="flex justify-end">
-                  <Button onClick={handleUpdateTreatment}>Update</Button>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  handleUpdateTreatment()
+                }}
+              >
+                <div className="grid grid-cols-2 gap-4 py-4">
+                  <div className="col-span-2 space-y-2">
+                    <Label>Treatment Name</Label>
+                    <Input
+                      value={selectedTreatment.treatment_name}
+                      onChange={(e) => handleEditChange("treatment_name", e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Treatment Date</Label>
+                    <Input
+                      type="date"
+                      value={selectedTreatment.treatment_date}
+                      onChange={(e) => handleEditChange("treatment_date", e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Tooth Number</Label>
+                    <Input
+                      value={selectedTreatment.tooth_number || ""}
+                      onChange={(e) => handleEditChange("tooth_number", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Cost</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={selectedTreatment.cost?.toString() || ""}
+                      onChange={(e) => handleEditChange("cost", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Status</Label>
+                    <Select
+                      value={selectedTreatment.status}
+                      onValueChange={(value) => handleEditChange("status", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="completed">Completed</SelectItem>
+                        <SelectItem value="in_progress">In Progress</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <Label>Procedure Notes</Label>
+                    <Textarea
+                      value={selectedTreatment.procedure_notes || ""}
+                      onChange={(e) => handleEditChange("procedure_notes", e.target.value)}
+                      rows={3}
+                    />
+                  </div>
                 </div>
-              </div>
+                <div className="flex justify-end space-x-2">
+                  <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit">Update Treatment</Button>
+                </div>
+              </form>
             )}
           </DialogContent>
         </Dialog>
-
-
       </div>
     </Layout>
   )
