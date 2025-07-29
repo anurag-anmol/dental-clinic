@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { query } from "@/lib/db"
 import { getCurrentUser } from "@/lib/auth"
 import { hasPermission, PERMISSIONS } from "@/lib/permissions"
+import { sendWhatsAppMessage } from "@/lib/whatsapp"
 
 export async function GET(request: NextRequest) {
   try {
@@ -83,6 +84,9 @@ export async function POST(request: NextRequest) {
         data.currentMedications,
       ],
     )) as any
+
+    // const message = `📅 *New Appointment Booked!*\n👤 Patient ID: ${data.patientId}\n🦷 Treatment: ${data.treatmentType}\n📆 Date: ${data.appointmentDate}\n⏰ Time: ${data.appointmentTime}`
+    // await sendWhatsAppMessage(`${data.phone}`, message)
 
     return NextResponse.json({ id: result.insertId, patient_id: patientId })
   } catch (error) {

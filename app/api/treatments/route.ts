@@ -16,9 +16,10 @@ export async function GET(request: NextRequest) {
     const patientId = searchParams.get("patient") || "all"
 
     let sql = `
-      SELECT t.*, 
+      SELECT t.*,
         CONCAT(p.first_name, ' ', p.last_name) as patient_name,
         p.patient_id,
+        p.id as patient_db_id,
         CONCAT(u.first_name, ' ', u.last_name) as dentist_name,
         tp.diagnosis,
         tp.treatment_description as plan_description
@@ -31,8 +32,8 @@ export async function GET(request: NextRequest) {
     const params: any[] = []
 
     if (search) {
-      sql += ` AND (p.first_name LIKE ? OR p.last_name LIKE ? OR t.treatment_name LIKE ?)`
-      params.push(`%${search}%`, `%${search}%`, `%${search}%`)
+      sql += ` AND (p.first_name LIKE ? OR p.last_name LIKE ? OR t.treatment_name LIKE ? OR t.treatment_type LIKE ?)`
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`)
     }
 
     if (status !== "all") {
@@ -72,16 +73,16 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await request.json()
-
     const result = (await query(
-      `INSERT INTO treatments (patient_id, dentist_id, treatment_plan_id, treatment_name, 
-       treatment_date, tooth_number, procedure_notes, cost, status) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO treatments (patient_id, dentist_id, treatment_plan_id, treatment_name, treatment_type,
+        treatment_date, tooth_number, procedure_notes, cost, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         data.patientId,
         data.dentistId,
         data.treatmentPlanId || null,
         data.treatmentName,
+        data.treatmentType || null,
         data.treatmentDate,
         data.toothNumber,
         data.procedureNotes,

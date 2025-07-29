@@ -2,6 +2,12 @@ import { type NextRequest, NextResponse } from "next/server"
 import { query } from "@/lib/db"
 import { getCurrentUser } from "@/lib/auth"
 import { hasPermission, PERMISSIONS } from "@/lib/permissions"
+import { sendWhatsAppMessage } from "@/lib/whatsapp"
+
+// await sendWhatsAppMessage(
+//   process.env.WHATSAPP_ADMIN_NUMBER!,
+//   `📅 New Appointment booked by ${patient_name} on ${Date}.`
+// );
 
 export async function GET(request: Request, context: { params: { id: string } }) {
   try {
