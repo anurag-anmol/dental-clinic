@@ -1,5 +1,4 @@
 "use client"
-
 import type React from "react"
 import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,9 +17,35 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Plus, Edit, Eye, Activity, CheckCircle, Clock, Loader2, Camera, X, Upload, ZoomIn } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Search,
+  Plus,
+  Edit,
+  Eye,
+  Activity,
+  CheckCircle,
+  Clock,
+  Loader2,
+  Camera,
+  X,
+  Upload,
+  ZoomIn,
+  Pill,
+  Trash2,
+} from "lucide-react"
 import { Layout } from "@/components/layout"
 import { useToast } from "@/hooks/use-toast"
+
+interface Medicine {
+  id?: number
+  name: string
+  dosage: string
+  frequency: string
+  duration: string
+  instructions: string
+  quantity?: number
+}
 
 interface Treatment {
   id: number
@@ -39,6 +64,7 @@ interface Treatment {
   diagnosis: string | null
   plan_description: string | null
   photos?: string[]
+  medicines?: Medicine[]
 }
 
 interface Patient {
@@ -78,6 +104,52 @@ const TREATMENT_TYPES = [
   "Cosmetic Dentistry",
 ]
 
+// Common dental medicines
+const COMMON_MEDICINES = [
+  "Amoxicillin",
+  "Ibuprofen",
+  "Paracetamol",
+  "Metronidazole",
+  "Clindamycin",
+  "Diclofenac",
+  "Chlorhexidine Mouthwash",
+  "Benzocaine Gel",
+  "Prednisolone",
+  "Azithromycin",
+  "Cefixime",
+  "Tramadol",
+  "Ketorolac",
+  "Lidocaine Gel",
+  "Hydrogen Peroxide",
+]
+
+const FREQUENCY_OPTIONS = [
+  "Once daily",
+  "Twice daily",
+  "Three times daily",
+  "Four times daily",
+  "Every 4 hours",
+  "Every 6 hours",
+  "Every 8 hours",
+  "Every 12 hours",
+  "As needed",
+  "Before meals",
+  "After meals",
+  "At bedtime",
+]
+
+const DURATION_OPTIONS = [
+  "3 days",
+  "5 days",
+  "7 days",
+  "10 days",
+  "14 days",
+  "21 days",
+  "1 month",
+  "Until finished",
+  "As needed",
+]
+
 export default function TreatmentsPage() {
   const { toast } = useToast()
   const [searchTerm, setSearchTerm] = useState("")
@@ -103,6 +175,17 @@ export default function TreatmentsPage() {
   const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null)
   const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false)
   const [loadingTreatmentDetails, setLoadingTreatmentDetails] = useState(false)
+
+  // Medicine states
+  const [medicines, setMedicines] = useState<Medicine[]>([])
+  const [newMedicine, setNewMedicine] = useState<Medicine>({
+    name: "",
+    dosage: "",
+    frequency: "",
+    duration: "",
+    instructions: "",
+    quantity: 1,
+  })
 
   const [formData, setFormData] = useState({
     patientId: "",
@@ -197,6 +280,36 @@ export default function TreatmentsPage() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  // Medicine management functions
+  const addMedicine = () => {
+    if (!newMedicine.name || !newMedicine.dosage || !newMedicine.frequency) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in medicine name, dosage, and frequency.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setMedicines((prev) => [...prev, { ...newMedicine, id: Date.now() }])
+    setNewMedicine({
+      name: "",
+      dosage: "",
+      frequency: "",
+      duration: "",
+      instructions: "",
+      quantity: 1,
+    })
+  }
+
+  const removeMedicine = (id: number) => {
+    setMedicines((prev) => prev.filter((med) => med.id !== id))
+  }
+
+  const updateMedicine = (id: number, field: keyof Medicine, value: string | number) => {
+    setMedicines((prev) => prev.map((med) => (med.id === id ? { ...med, [field]: value } : med)))
   }
 
   // Photo handling functions for Add Treatment
@@ -456,12 +569,23 @@ export default function TreatmentsPage() {
       if (response.ok) {
         const treatmentWithPhotos = await response.json()
         setSelectedTreatment(treatmentWithPhotos)
+
+        // Load existing medicines if any
+        const medicinesResponse = await fetch(`/api/treatments/${t.id}/medicines`)
+        if (medicinesResponse.ok) {
+          const medicinesData = await medicinesResponse.json()
+          setMedicines(medicinesData)
+        } else {
+          setMedicines([])
+        }
       } else {
         setSelectedTreatment(t)
+        setMedicines([])
       }
     } catch (error) {
       console.error("Error fetching treatment details:", error)
       setSelectedTreatment(t)
+      setMedicines([])
     } finally {
       setLoadingTreatmentDetails(false)
       setEditDialogOpen(true)
@@ -504,14 +628,32 @@ export default function TreatmentsPage() {
           await uploadPhotos(selectedTreatment.id, editSelectedPhotos)
         }
 
+        // Save medicines
+        if (medicines.length > 0) {
+          const medicinesRes = await fetch(`/api/treatments/${selectedTreatment.id}/medicines`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ medicines }),
+          })
+
+          if (!medicinesRes.ok) {
+            toast({
+              title: "Warning",
+              description: "Treatment updated but medicines could not be saved.",
+              variant: "destructive",
+            })
+          }
+        }
+
         toast({ title: "Success", description: "Treatment updated successfully." })
         setEditDialogOpen(false)
-
-        // Clear edit photos
+        // Clear edit photos and medicines
         editPhotoPreviewUrls.forEach((url) => URL.revokeObjectURL(url))
         setEditSelectedPhotos([])
         setEditPhotoPreviewUrls([])
-
+        setMedicines([])
         fetchTreatments()
       } else {
         const error = await res.json()
@@ -863,6 +1005,9 @@ export default function TreatmentsPage() {
                         {treatment.photos && treatment.photos.length > 0 && (
                           <Camera className="h-4 w-4 text-blue-500" />
                         )}
+                        {treatment.medicines && treatment.medicines.length > 0 && (
+                          <Pill className="h-4 w-4 text-green-500" />
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -1048,193 +1193,371 @@ export default function TreatmentsPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Enhanced Edit Dialog */}
+        {/* Enhanced Edit Dialog with Medicine Prescription */}
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Edit Treatment</DialogTitle>
-              <DialogDescription>Update treatment details and add photos</DialogDescription>
+              <DialogTitle>Edit Treatment & Prescription</DialogTitle>
+              <DialogDescription>Update treatment details and manage medicine prescriptions</DialogDescription>
             </DialogHeader>
             {selectedTreatment && (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  handleUpdateTreatment()
-                }}
-              >
-                <div className="grid grid-cols-2 gap-4 py-4">
-                  <div className="space-y-2">
-                    <Label>Treatment Type</Label>
-                    <Select
-                      value={selectedTreatment.treatment_type || ""}
-                      onValueChange={(value) => handleEditChange("treatment_type", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select treatment type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {TREATMENT_TYPES.map((type) => (
-                          <SelectItem key={type} value={type}>
-                            {type}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Treatment Name</Label>
-                    <Input
-                      value={selectedTreatment.treatment_name}
-                      onChange={(e) => handleEditChange("treatment_name", e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Treatment Date</Label>
-                    <Input
-                      type="date"
-                      value={selectedTreatment.treatment_date}
-                      onChange={(e) => handleEditChange("treatment_date", e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Tooth Number</Label>
-                    <Input
-                      value={selectedTreatment.tooth_number || ""}
-                      onChange={(e) => handleEditChange("tooth_number", e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Cost</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={selectedTreatment.cost?.toString() || ""}
-                      onChange={(e) => handleEditChange("cost", e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Status</Label>
-                    <Select
-                      value={selectedTreatment.status}
-                      onValueChange={(value) => handleEditChange("status", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="completed">Completed</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="col-span-2 space-y-2">
-                    <Label>Procedure Notes</Label>
-                    <Textarea
-                      value={selectedTreatment.procedure_notes || ""}
-                      onChange={(e) => handleEditChange("procedure_notes", e.target.value)}
-                      rows={3}
-                    />
-                  </div>
+              <Tabs defaultValue="treatment" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="treatment">Treatment Details</TabsTrigger>
+                  <TabsTrigger value="medicines">
+                    <Pill className="h-4 w-4 mr-2" />
+                    Medicines ({medicines.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="photos">Photos</TabsTrigger>
+                </TabsList>
 
+                {/* Treatment Details Tab */}
+                <TabsContent value="treatment" className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Treatment Type</Label>
+                      <Select
+                        value={selectedTreatment.treatment_type || ""}
+                        onValueChange={(value) => handleEditChange("treatment_type", value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select treatment type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {TREATMENT_TYPES.map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {type}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Treatment Name</Label>
+                      <Input
+                        value={selectedTreatment.treatment_name}
+                        onChange={(e) => handleEditChange("treatment_name", e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Treatment Date</Label>
+                      <Input
+                        type="date"
+                        value={selectedTreatment.treatment_date}
+                        onChange={(e) => handleEditChange("treatment_date", e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Tooth Number</Label>
+                      <Input
+                        value={selectedTreatment.tooth_number || ""}
+                        onChange={(e) => handleEditChange("tooth_number", e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Cost</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={selectedTreatment.cost?.toString() || ""}
+                        onChange={(e) => handleEditChange("cost", e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Status</Label>
+                      <Select
+                        value={selectedTreatment.status}
+                        onValueChange={(value) => handleEditChange("status", value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="completed">Completed</SelectItem>
+                          <SelectItem value="in_progress">In Progress</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="col-span-2 space-y-2">
+                      <Label>Procedure Notes</Label>
+                      <Textarea
+                        value={selectedTreatment.procedure_notes || ""}
+                        onChange={(e) => handleEditChange("procedure_notes", e.target.value)}
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+
+                {/* Medicines Tab */}
+                <TabsContent value="medicines" className="space-y-6">
+                  {/* Add New Medicine Form */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Plus className="h-5 w-5" />
+                        Add New Medicine
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Medicine Name *</Label>
+                          <Select
+                            value={newMedicine.name}
+                            onValueChange={(value) => setNewMedicine((prev) => ({ ...prev, name: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select or type medicine name" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {COMMON_MEDICINES.map((medicine) => (
+                                <SelectItem key={medicine} value={medicine}>
+                                  {medicine}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            placeholder="Or type custom medicine name"
+                            value={newMedicine.name}
+                            onChange={(e) => setNewMedicine((prev) => ({ ...prev, name: e.target.value }))}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Dosage *</Label>
+                          <Input
+                            placeholder="e.g., 500mg, 1 tablet"
+                            value={newMedicine.dosage}
+                            onChange={(e) => setNewMedicine((prev) => ({ ...prev, dosage: e.target.value }))}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Frequency *</Label>
+                          <Select
+                            value={newMedicine.frequency}
+                            onValueChange={(value) => setNewMedicine((prev) => ({ ...prev, frequency: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select frequency" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {FREQUENCY_OPTIONS.map((freq) => (
+                                <SelectItem key={freq} value={freq}>
+                                  {freq}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Duration</Label>
+                          <Select
+                            value={newMedicine.duration}
+                            onValueChange={(value) => setNewMedicine((prev) => ({ ...prev, duration: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select duration" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {DURATION_OPTIONS.map((duration) => (
+                                <SelectItem key={duration} value={duration}>
+                                  {duration}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Quantity</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            placeholder="Number of tablets/units"
+                            value={newMedicine.quantity}
+                            onChange={(e) => setNewMedicine((prev) => ({ ...prev, quantity: Number(e.target.value) }))}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Special Instructions</Label>
+                          <Input
+                            placeholder="e.g., Take with food, Before meals"
+                            value={newMedicine.instructions}
+                            onChange={(e) => setNewMedicine((prev) => ({ ...prev, instructions: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+                      <Button onClick={addMedicine} className="w-full">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Medicine to Prescription
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Current Medicines List */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Pill className="h-5 w-5" />
+                        Current Prescription ({medicines.length} medicines)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {medicines.length > 0 ? (
+                        <div className="space-y-4">
+                          {medicines.map((medicine, index) => (
+                            <div key={medicine.id || index} className="border rounded-lg p-4 bg-gray-50">
+                              <div className="flex justify-between items-start mb-3">
+                                <div className="flex-1">
+                                  <h4 className="font-semibold text-lg text-blue-600">{medicine.name}</h4>
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2 text-sm">
+                                    <div>
+                                      <span className="font-medium">Dosage:</span> {medicine.dosage}
+                                    </div>
+                                    <div>
+                                      <span className="font-medium">Frequency:</span> {medicine.frequency}
+                                    </div>
+                                    <div>
+                                      <span className="font-medium">Duration:</span> {medicine.duration}
+                                    </div>
+                                    <div>
+                                      <span className="font-medium">Quantity:</span> {medicine.quantity}
+                                    </div>
+                                  </div>
+                                  {medicine.instructions && (
+                                    <div className="mt-2 text-sm">
+                                      <span className="font-medium">Instructions:</span> {medicine.instructions}
+                                    </div>
+                                  )}
+                                </div>
+                                <Button variant="destructive" size="sm" onClick={() => removeMedicine(medicine.id!)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-gray-500">
+                          <Pill className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                          <p>No medicines added to prescription yet</p>
+                          <p className="text-sm">Add medicines using the form above</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Photos Tab */}
+                <TabsContent value="photos" className="space-y-4">
                   {/* Existing Photos */}
                   {selectedTreatment.photos && selectedTreatment.photos.length > 0 && (
-                    <div className="col-span-2 space-y-2">
-                      <Label>Current Photos</Label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {selectedTreatment.photos.map((photo, index) => (
-                          <div key={index} className="relative">
-                            <img
-                              src={photo || "/placeholder.svg"}
-                              alt={`Current photo ${index + 1}`}
-                              className="w-full h-20 object-cover rounded border"
-                            />
-                            <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
-                              Current {index + 1}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Current Photos</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-3 gap-2">
+                          {selectedTreatment.photos.map((photo, index) => (
+                            <div key={index} className="relative">
+                              <img
+                                src={photo || "/placeholder.svg"}
+                                alt={`Current photo ${index + 1}`}
+                                className="w-full h-20 object-cover rounded border"
+                              />
+                              <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
+                                Current {index + 1}
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
                   )}
 
                   {/* Add New Photos */}
-                  <div className="col-span-2 space-y-2">
-                    <Label>Add New Photos</Label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-                      <div className="text-center">
-                        <Camera className="mx-auto h-8 w-8 text-gray-400" />
-                        <div className="mt-2">
-                          <Label htmlFor="edit-photo-upload" className="cursor-pointer">
-                            <span className="mt-2 block text-sm font-medium text-gray-900">
-                              Upload additional photos
-                            </span>
-                            <span className="mt-1 block text-sm text-gray-500">
-                              PNG, JPG, WebP up to 10MB each (Max 5 photos)
-                            </span>
-                          </Label>
-                          <Input
-                            id="edit-photo-upload"
-                            type="file"
-                            multiple
-                            accept="image/*"
-                            onChange={handleEditPhotoSelect}
-                            className="hidden"
-                          />
-                        </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="mt-2 bg-transparent"
-                          onClick={() => document.getElementById("edit-photo-upload")?.click()}
-                        >
-                          <Upload className="h-4 w-4 mr-2" />
-                          Choose Photos
-                        </Button>
-                      </div>
-                      {/* New Photo Previews */}
-                      {editPhotoPreviewUrls.length > 0 && (
-                        <div className="mt-4">
-                          <div className="grid grid-cols-3 gap-2">
-                            {editPhotoPreviewUrls.map((url, index) => (
-                              <div key={index} className="relative">
-                                <img
-                                  src={url || "/placeholder.svg"}
-                                  alt={`New photo ${index + 1}`}
-                                  className="w-full h-20 object-cover rounded border"
-                                />
-                                <Button
-                                  type="button"
-                                  variant="destructive"
-                                  size="sm"
-                                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
-                                  onClick={() => removeEditPhoto(index)}
-                                >
-                                  <X className="h-3 w-3" />
-                                </Button>
-                                <div className="absolute bottom-1 left-1 bg-green-600 text-white text-xs px-1 rounded">
-                                  New {index + 1}
-                                </div>
-                              </div>
-                            ))}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Add New Photos</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                        <div className="text-center">
+                          <Camera className="mx-auto h-8 w-8 text-gray-400" />
+                          <div className="mt-2">
+                            <Label htmlFor="edit-photo-upload" className="cursor-pointer">
+                              <span className="mt-2 block text-sm font-medium text-gray-900">
+                                Upload additional photos
+                              </span>
+                              <span className="mt-1 block text-sm text-gray-500">
+                                PNG, JPG, WebP up to 10MB each (Max 5 photos)
+                              </span>
+                            </Label>
+                            <Input
+                              id="edit-photo-upload"
+                              type="file"
+                              multiple
+                              accept="image/*"
+                              onChange={handleEditPhotoSelect}
+                              className="hidden"
+                            />
                           </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="mt-2 bg-transparent"
+                            onClick={() => document.getElementById("edit-photo-upload")?.click()}
+                          >
+                            <Upload className="h-4 w-4 mr-2" />
+                            Choose Photos
+                          </Button>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex justify-end space-x-2">
+                        {/* New Photo Previews */}
+                        {editPhotoPreviewUrls.length > 0 && (
+                          <div className="mt-4">
+                            <div className="grid grid-cols-3 gap-2">
+                              {editPhotoPreviewUrls.map((url, index) => (
+                                <div key={index} className="relative">
+                                  <img
+                                    src={url || "/placeholder.svg"}
+                                    alt={`New photo ${index + 1}`}
+                                    className="w-full h-20 object-cover rounded border"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="sm"
+                                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                                    onClick={() => removeEditPhoto(index)}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                  <div className="absolute bottom-1 left-1 bg-green-600 text-white text-xs px-1 rounded">
+                                    New {index + 1}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <div className="flex justify-end space-x-2 mt-6 pt-4 border-t">
                   <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={uploadingPhotos}>
+                  <Button onClick={handleUpdateTreatment} disabled={uploadingPhotos}>
                     {uploadingPhotos && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {uploadingPhotos ? "Uploading..." : "Update Treatment"}
                   </Button>
                 </div>
-              </form>
+              </Tabs>
             )}
           </DialogContent>
         </Dialog>

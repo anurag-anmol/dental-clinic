@@ -93,7 +93,7 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
 
     // Check if patient has any treatments, appointments, etc.
     const hasRecords = (await query(
-      `SELECT 
+      `SELECT
         (SELECT COUNT(*) FROM treatments WHERE patient_id = ?) +
         (SELECT COUNT(*) FROM appointments WHERE patient_id = ?) +
         (SELECT COUNT(*) FROM treatment_plans WHERE patient_id = ?) as total_records`,
