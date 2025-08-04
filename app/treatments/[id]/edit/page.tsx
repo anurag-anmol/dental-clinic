@@ -31,6 +31,7 @@ interface Medicine {
   id?: number
   medicine_id?: number
   medicine_name: string
+  new_medicine_name: string
   dosage: string
   quantity: number
   duration_days?: number
@@ -79,6 +80,7 @@ export default function EditTreatmentPage() {
   // Form states
   const [newMedicine, setNewMedicine] = useState<Medicine>({
     medicine_name: "",
+    new_medicine_name: "",
     dosage: "",
     quantity: 1,
     duration_days: 7,
@@ -179,6 +181,7 @@ export default function EditTreatmentPage() {
         setIsMedicineDialogOpen(false)
         setNewMedicine({
           medicine_name: "",
+          new_medicine_name: "",
           dosage: "",
           quantity: 1,
           duration_days: 7,

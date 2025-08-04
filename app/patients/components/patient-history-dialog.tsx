@@ -1,6 +1,7 @@
 "use client"
-
 import { useState, useEffect } from "react"
+import { CardDescription } from "@/components/ui/card"
+
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -20,6 +21,7 @@ import {
     AlertCircle,
     Loader2,
     X,
+    Pill,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
@@ -43,6 +45,18 @@ interface Patient {
     created_at: string
 }
 
+interface Medicine {
+    id: number
+    treatment_id: number
+    medicine_name: string
+    dosage: string
+    frequency: string
+    duration?: string
+    instructions?: string
+    quantity: number
+    created_at: string
+}
+
 interface Treatment {
     id: number
     treatment_name: string
@@ -54,6 +68,7 @@ interface Treatment {
     status: string
     dentist_name: string
     photos?: string[]
+    medicines?: Medicine[]
 }
 
 interface Appointment {
@@ -90,6 +105,7 @@ export function PatientHistoryDialog({ patient, isOpen, onClose }: PatientHistor
     const [treatments, setTreatments] = useState<Treatment[]>([])
     const [appointments, setAppointments] = useState<Appointment[]>([])
     const [treatmentPlans, setTreatmentPlans] = useState<TreatmentPlan[]>([])
+    const [allMedicines, setAllMedicines] = useState<Medicine[]>([])
     const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null)
     const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false)
 
@@ -101,14 +117,40 @@ export function PatientHistoryDialog({ patient, isOpen, onClose }: PatientHistor
 
     const fetchPatientHistory = async () => {
         if (!patient) return
-
         setLoading(true)
         try {
             // Fetch treatments
             const treatmentsResponse = await fetch(`/api/patients/${patient.id}/treatments`)
             if (treatmentsResponse.ok) {
                 const treatmentsData = await treatmentsResponse.json()
-                setTreatments(treatmentsData)
+
+                // Fetch medicines for each treatment
+                const treatmentsWithMedicines = await Promise.all(
+                    treatmentsData.map(async (treatment: Treatment) => {
+                        try {
+                            const medicinesResponse = await fetch(`/api/treatments/${treatment.id}/medicines`)
+                            if (medicinesResponse.ok) {
+                                const medicines = await medicinesResponse.json()
+                                return { ...treatment, medicines }
+                            }
+                            return { ...treatment, medicines: [] }
+                        } catch (error) {
+                            console.error(`Error fetching medicines for treatment ${treatment.id}:`, error)
+                            return { ...treatment, medicines: [] }
+                        }
+                    }),
+                )
+
+                setTreatments(treatmentsWithMedicines)
+
+                // Collect all medicines for the medicines tab
+                const allMeds: Medicine[] = []
+                treatmentsWithMedicines.forEach((treatment) => {
+                    if (treatment.medicines) {
+                        allMeds.push(...treatment.medicines)
+                    }
+                })
+                setAllMedicines(allMeds)
             }
 
             // Fetch appointments
@@ -191,6 +233,10 @@ export function PatientHistoryDialog({ patient, isOpen, onClose }: PatientHistor
         return age
     }
 
+    const getTreatmentByMedicine = (medicine: Medicine) => {
+        return treatments.find((t) => t.id === medicine.treatment_id)
+    }
+
     if (!patient) return null
 
     return (
@@ -214,9 +260,13 @@ export function PatientHistoryDialog({ patient, isOpen, onClose }: PatientHistor
                         </div>
                     ) : (
                         <Tabs defaultValue="overview" className="w-full">
-                            <TabsList className="grid w-full grid-cols-5">
+                            <TabsList className="grid w-full grid-cols-6">
                                 <TabsTrigger value="overview">Overview</TabsTrigger>
                                 <TabsTrigger value="treatments">Treatments ({treatments.length})</TabsTrigger>
+                                <TabsTrigger value="medicines">
+                                    <Pill className="h-4 w-4 mr-1" />
+                                    Medicines ({allMedicines.length})
+                                </TabsTrigger>
                                 <TabsTrigger value="appointments">Appointments ({appointments.length})</TabsTrigger>
                                 <TabsTrigger value="plans">Treatment Plans ({treatmentPlans.length})</TabsTrigger>
                                 <TabsTrigger value="medical">Medical Info</TabsTrigger>
@@ -305,8 +355,8 @@ export function PatientHistoryDialog({ patient, isOpen, onClose }: PatientHistor
                                                     <div className="text-sm text-gray-600">Completed</div>
                                                 </div>
                                                 <div className="text-center p-3 bg-purple-50 rounded-lg">
-                                                    <div className="text-2xl font-bold text-purple-600">{appointments.length}</div>
-                                                    <div className="text-sm text-gray-600">Appointments</div>
+                                                    <div className="text-2xl font-bold text-purple-600">{allMedicines.length}</div>
+                                                    <div className="text-sm text-gray-600">Medicines Prescribed</div>
                                                 </div>
                                                 <div className="text-center p-3 bg-orange-50 rounded-lg">
                                                     <div className="text-2xl font-bold text-orange-600">
@@ -332,8 +382,14 @@ export function PatientHistoryDialog({ patient, isOpen, onClose }: PatientHistor
                                                         <Activity className="h-4 w-4 text-blue-500" />
                                                         <div>
                                                             <div className="font-medium">{treatment.treatment_name}</div>
-                                                            <div className="text-sm text-gray-500">
+                                                            <div className="text-sm text-gray-500 flex items-center gap-2">
                                                                 {new Date(treatment.treatment_date).toLocaleDateString()} - Dr. {treatment.dentist_name}
+                                                                {treatment.medicines && treatment.medicines.length > 0 && (
+                                                                    <Badge variant="outline" className="text-xs">
+                                                                        <Pill className="h-3 w-3 mr-1" />
+                                                                        {treatment.medicines.length} medicines
+                                                                    </Badge>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -366,6 +422,7 @@ export function PatientHistoryDialog({ patient, isOpen, onClose }: PatientHistor
                                                     <TableHead>Dentist</TableHead>
                                                     <TableHead>Cost</TableHead>
                                                     <TableHead>Status</TableHead>
+                                                    <TableHead>Medicines</TableHead>
                                                     <TableHead>Photos</TableHead>
                                                 </TableRow>
                                             </TableHeader>
@@ -391,6 +448,16 @@ export function PatientHistoryDialog({ patient, isOpen, onClose }: PatientHistor
                                                                 {getStatusIcon(treatment.status)}
                                                                 {treatment.status.replace("_", " ")}
                                                             </Badge>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {treatment.medicines && treatment.medicines.length > 0 ? (
+                                                                <Badge variant="outline" className="bg-green-50 text-green-700">
+                                                                    <Pill className="h-3 w-3 mr-1" />
+                                                                    {treatment.medicines.length} prescribed
+                                                                </Badge>
+                                                            ) : (
+                                                                <span className="text-gray-400">No medicines</span>
+                                                            )}
                                                         </TableCell>
                                                         <TableCell>
                                                             {treatment.photos && treatment.photos.length > 0 ? (
@@ -422,6 +489,99 @@ export function PatientHistoryDialog({ patient, isOpen, onClose }: PatientHistor
                                             <div className="text-center py-8 text-gray-500">
                                                 <Activity className="h-12 w-12 mx-auto mb-2 text-gray-300" />
                                                 No treatments recorded for this patient
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+
+                            {/* Medicines Tab */}
+                            <TabsContent value="medicines" className="space-y-4">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2">
+                                            <Pill className="h-5 w-5" />
+                                            Medicine Prescription History
+                                        </CardTitle>
+                                        <CardDescription>Complete history of all medicines prescribed to this patient</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {allMedicines.length > 0 ? (
+                                            <div className="space-y-4">
+                                                {allMedicines.map((medicine) => {
+                                                    const treatment = getTreatmentByMedicine(medicine)
+                                                    return (
+                                                        <Card key={medicine.id} className="border-l-4 border-l-blue-500">
+                                                            <CardContent className="pt-4">
+                                                                <div className="flex justify-between items-start mb-3">
+                                                                    <div className="flex-1">
+                                                                        <h4 className="font-semibold text-lg text-blue-600 mb-1">
+                                                                            {medicine.medicine_name}
+                                                                        </h4>
+                                                                        <div className="text-sm text-gray-600 mb-2">
+                                                                            Prescribed on {new Date(medicine.created_at).toLocaleDateString()}
+                                                                            {treatment && (
+                                                                                <span className="ml-2">
+                                                                                    for <strong>{treatment.treatment_name}</strong> by Dr.{" "}
+                                                                                    {treatment.dentist_name}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                    <Badge variant="outline" className="bg-blue-50">
+                                                                        {new Date(medicine.created_at).toLocaleDateString()}
+                                                                    </Badge>
+                                                                </div>
+
+                                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
+                                                                    <div className="bg-gray-50 p-3 rounded-lg">
+                                                                        <div className="text-xs text-gray-500 uppercase tracking-wide">Dosage</div>
+                                                                        <div className="font-medium">{medicine.dosage}</div>
+                                                                    </div>
+                                                                    <div className="bg-gray-50 p-3 rounded-lg">
+                                                                        <div className="text-xs text-gray-500 uppercase tracking-wide">Frequency</div>
+                                                                        <div className="font-medium">{medicine.frequency}</div>
+                                                                    </div>
+                                                                    <div className="bg-gray-50 p-3 rounded-lg">
+                                                                        <div className="text-xs text-gray-500 uppercase tracking-wide">Duration</div>
+                                                                        <div className="font-medium">{medicine.duration || "As needed"}</div>
+                                                                    </div>
+                                                                    <div className="bg-gray-50 p-3 rounded-lg">
+                                                                        <div className="text-xs text-gray-500 uppercase tracking-wide">Quantity</div>
+                                                                        <div className="font-medium">{medicine.quantity}</div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {medicine.instructions && (
+                                                                    <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
+                                                                        <div className="text-xs text-yellow-700 uppercase tracking-wide mb-1">
+                                                                            Special Instructions
+                                                                        </div>
+                                                                        <div className="text-sm text-yellow-800">{medicine.instructions}</div>
+                                                                    </div>
+                                                                )}
+
+                                                                {treatment && (
+                                                                    <div className="mt-3 pt-3 border-t border-gray-200">
+                                                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                                            <Activity className="h-4 w-4" />
+                                                                            <span>
+                                                                                Related to: <strong>{treatment.treatment_name}</strong>
+                                                                                {treatment.tooth_number && ` (Tooth: ${treatment.tooth_number})`}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </CardContent>
+                                                        </Card>
+                                                    )
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-12 text-gray-500">
+                                                <Pill className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                                                <h3 className="text-lg font-medium mb-2">No Medicines Prescribed</h3>
+                                                <p className="text-sm">No medicine prescriptions found for this patient.</p>
                                             </div>
                                         )}
                                     </CardContent>
@@ -529,7 +689,9 @@ export function PatientHistoryDialog({ patient, isOpen, onClose }: PatientHistor
                                                 {plan.estimated_cost && (
                                                     <div className="flex justify-between items-center pt-2 border-t">
                                                         <span className="font-medium">Estimated Cost:</span>
-                                                        <span className="text-lg font-bold text-green-600">₹{Number(plan.estimated_cost).toFixed(2)}</span>
+                                                        <span className="text-lg font-bold text-green-600">
+                                                            ₹{Number(plan.estimated_cost).toFixed(2)}
+                                                        </span>
                                                     </div>
                                                 )}
                                             </CardContent>

@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { query } from "@/lib/db"
 import { getCurrentUser } from "@/lib/auth"
 import { hasPermission, PERMISSIONS } from "@/lib/permissions"
+import { Erica_One } from "next/font/google"
 
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     // Insert new medicines
     for (const medicine of medicines) {
       await query(
-        `INSERT INTO treatment_medicines (treatment_id, medicine_name,new_medicines_name, dosage, frequency, duration, instructions, quantity, created_at)
+        `INSERT INTO treatment_medicines (treatment_id, medicine_name, new_medicines_name, dosage, frequency, duration, instructions, quantity, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?,?, NOW())`,
         [
           id,
@@ -58,6 +59,6 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     return NextResponse.json({ message: "Medicines saved successfully" })
   } catch (error) {
     console.error("Error saving treatment medicines:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 },)
   }
 }

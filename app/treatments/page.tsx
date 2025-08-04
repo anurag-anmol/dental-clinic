@@ -40,6 +40,7 @@ import { useToast } from "@/hooks/use-toast"
 interface Medicine {
   id?: number
   name: string
+  newName: string
   dosage: string
   frequency: string
   duration: string
@@ -180,6 +181,7 @@ export default function TreatmentsPage() {
   const [medicines, setMedicines] = useState<Medicine[]>([])
   const [newMedicine, setNewMedicine] = useState<Medicine>({
     name: "",
+    newName: "",
     dosage: "",
     frequency: "",
     duration: "",
@@ -296,6 +298,7 @@ export default function TreatmentsPage() {
     setMedicines((prev) => [...prev, { ...newMedicine, id: Date.now() }])
     setNewMedicine({
       name: "",
+      newName: "",
       dosage: "",
       frequency: "",
       duration: "",
@@ -1085,13 +1088,14 @@ export default function TreatmentsPage() {
                       <p>
                         <strong>Date:</strong> {new Date(selectedTreatment.treatment_date).toLocaleDateString()}
                       </p>
-                      <p>
+                      <div>
                         <strong>Status:</strong>
                         <Badge className={`ml-2 ${getStatusColor(selectedTreatment.status)}`}>
                           {getStatusIcon(selectedTreatment.status)} {selectedTreatment.status.replace("_", " ")}
                         </Badge>
-                      </p>
+                      </div>
                     </CardContent>
+
                   </Card>
                 </div>
                 {/* Additional Details */}

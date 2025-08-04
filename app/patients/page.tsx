@@ -33,6 +33,7 @@ interface Patient {
 }
 
 export default function PatientsPage() {
+  const [isOpen, setIsOpen] = useState(false)
   const { toast } = useToast()
   const [searchTerm, setSearchTerm] = useState("")
   const [patients, setPatients] = useState<Patient[]>([])
@@ -240,12 +241,25 @@ export default function PatientsPage() {
                     <TableCell>{new Date(patient.created_at).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleViewPatient(patient)}>
-                          <Eye className="h-4 w-4" />
+                        <Button variant="outline" size="sm" onClick={() => setIsOpen(true)}>
+                          <Eye className="h-4 w-4" /> <PatientHistoryDialog
+                            patient={{
+                              id: 1,
+                              patient_id: "12345",
+                              first_name: "John",
+                              last_name: "Doe",
+                              phone: "123-456-7890",
+                              created_at: new Date().toISOString(),
+                            }}
+                            isOpen={isOpen}
+                            onClose={() => setIsOpen(false)}
+                          />
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => handleEditPatient(patient)}>
                           <Edit className="h-4 w-4" />
                         </Button>
+                        {/* <button onClick={() => setIsOpen(true)}>Open Patient History</button> */}
+
                       </div>
                     </TableCell>
                   </TableRow>
