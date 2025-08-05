@@ -155,6 +155,8 @@ export function PatientHistoryDialog({ patient, isOpen, onClose }: PatientHistor
 
             // Fetch appointments
             const appointmentsResponse = await fetch(`/api/patients/${patient.id}/appointments`)
+            console.log("Name", patient.first_name);
+
             if (appointmentsResponse.ok) {
                 const appointmentsData = await appointmentsResponse.json()
                 setAppointments(appointmentsData)
