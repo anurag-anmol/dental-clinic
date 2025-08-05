@@ -22,6 +22,7 @@ import {
     Loader2,
     X,
     Pill,
+    Smile,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
@@ -257,7 +258,7 @@ export function PatientHistoryDialog({ patient, isOpen, onClose }: PatientHistor
 
                     {loading ? (
                         <div className="flex items-center justify-center py-8">
-                            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                            <Smile className="h-8 w-8 animate-spin text-blue-600" />
                             <span className="ml-2 text-gray-600">Loading patient history...</span>
                         </div>
                     ) : (
@@ -267,7 +268,7 @@ export function PatientHistoryDialog({ patient, isOpen, onClose }: PatientHistor
                                 <TabsTrigger value="treatments">Treatments ({treatments.length})</TabsTrigger>
                                 <TabsTrigger value="medicines">
                                     <Pill className="h-4 w-4 mr-1" />
-                                    Medicines ({allMedicines.length})
+                                    Medicine Prescription ({allMedicines.length})
                                 </TabsTrigger>
                                 <TabsTrigger value="appointments">Appointments ({appointments.length})</TabsTrigger>
                                 <TabsTrigger value="plans">Treatment Plans ({treatmentPlans.length})</TabsTrigger>
