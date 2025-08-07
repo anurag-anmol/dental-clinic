@@ -6,7 +6,7 @@ export async function sendWhatsAppMessage(to: string, message: string) {
     return client.messages.create({
         body: message,
         from: process.env.TWILIO_WHATSAPP_FROM!,
-        to,
+        to: to,
     })
 }
 

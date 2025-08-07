@@ -77,9 +77,9 @@ export async function POST(request: NextRequest) {
     const data = await request.json()
 
     const result = (await query(
-      `INSERT INTO appointments (patient_id, dentist_id, appointment_date, appointment_time, 
-       duration_minutes, treatment_type, notes, status) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'scheduled')`,
+      `INSERT INTO appointments (patient_id, dentist_id, appointment_date, appointment_time,
+      duration_minutes, treatment_type, notes, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'scheduled')`,
       [
         data.patientId,
         data.dentistId,
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
         data.duration,
         data.treatmentType,
         data.notes,
-        // data.phone,
+        data.phone,
       ],
     )) as any
 
