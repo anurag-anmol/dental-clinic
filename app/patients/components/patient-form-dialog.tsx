@@ -283,7 +283,7 @@ export function PatientFormDialog({ isOpen, onClose, onSuccess, mode, patient }:
                                             placeholder="Enter email address"
                                         />
                                     </div>
-                                    <div className="space-y-2">
+                                    <div className="space-y-2wha">
                                         <Label htmlFor="emergencyContactName">Emergency Contact Name</Label>
                                         <Input
                                             id="emergencyContactName"
