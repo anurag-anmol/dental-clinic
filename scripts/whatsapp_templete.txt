@@ -123,7 +123,6 @@ Footer:
 Header: Free Dental Campaign Invite
 
 
-
 Hi {{1}}, 👋
 
 You're invited to our FREE dental checkup campaign!
@@ -135,27 +134,22 @@ You're invited to our FREE dental checkup campaign!
 🏥 Clinic: {{5}}
 
 Reply with:
-- "Book" to confirm your appointment
+- "Book" to confirm your appointment-
 - "Cancel" if you're unavailable
 
 Thank you for trusting {{6}} Dental Care!
 
 Footer:
 
+-------------------------------------------------
 
+7. Template Name: appointment_reminder
 
----------------------------------
-
-
-6.Template Name:
-
-Header: Free Dental Campaign Invite
-
-
+Header: Friendly Reminder: Your Dental Appointment
 
 Hi {{1}}, 👋
 
-You're invited to our FREE dental checkup campaign!
+This is a reminder for your upcoming dental appointment.
 
 🦷 Appointment Details:
 📅 Date: {{2}}
@@ -163,12 +157,180 @@ You're invited to our FREE dental checkup campaign!
 👨‍⚕️ Dentist: {{4}}
 🏥 Clinic: {{5}}
 
-Reply with:
-- "Book" to confirm your appointment
-- "Cancel" if you're unavailable
+Please arrive 10 minutes early. Need to reschedule? Reply:
+
+"Reschedule"
+
+"Cancel"
+
+Thank you for choosing {{6}} Dental Care!
+
+Footer:
+
+-----------------------------------------------
+
+8. Template Name: payment_confirmation
+Header: Payment Received – Thank You!
+
+Hi {{1}}, 👋
+
+Your payment for the dental service has been confirmed.
+
+💰 Payment Details:
+🦷 Service: {{2}}
+💳 Amount Paid: {{3}}
+📅 Date: {{4}}
+
+A receipt has been emailed to you. Need assistance? Reply "Help".
 
 Thank you for trusting {{6}} Dental Care!
 
 Footer:
 
 
+-----------------------------------------------
+
+9. Template Name: feedback_request
+Header: How Was Your Visit?
+
+Hi {{1}}, 👋
+
+We’d love your feedback on your recent dental visit!
+
+⭐ Rate your experience (1-5):
+
+"1" – Poor
+
+"2" – Fair
+
+"3" – Good
+
+"4" – Very Good
+
+"5" – Excellent
+
+Your feedback helps us improve!
+
+Thank you,
+{{6}} Dental Care
+
+Footer:
+
+-----------------------------------------------
+
+10. Template Name: membership_offer
+Header: Exclusive Dental Membership for You!
+
+Hi {{1}}, 👋
+
+Get 20% OFF regular checkups with our annual membership!
+
+🦷 Benefits:
+✅ Priority appointments
+✅ Discounts on treatments
+✅ Free oral health kit
+
+Reply "Join" to enroll or "Info" for details.
+
+Thank you for choosing {{6}} Dental Care!
+
+Footer:
+
+-----------------------------------------------
+
+11. Template Name: emergency_contact
+Header: Urgent Dental Assistance?
+
+Hi {{1}}, 👋
+
+Facing a dental emergency? We’re here to help!
+
+🚨 Emergency Services:
+📞 Call: {{2}} (24/7)
+🏥 Clinic: {{3}}
+
+For non-urgent queries, reply "Help".
+
+{{6}} Dental Care
+
+Footer:
+
+-----------------------------------------------
+
+12. Template Name: referral_reward
+Header: Refer a Friend, Get Rewarded!
+
+Hi {{1}}, 👋
+
+Refer a friend to {{6}} Dental Care and earn $20 credit!
+
+🦷 How it works:
+
+Share your referral code: {{2}}
+
+Friend books an appointment
+
+You get rewarded!
+
+Reply "Refer" for details.
+
+Thank you for supporting us!
+
+Footer:
+
+
+-----------------------------------------------
+
+13. Template Name: birthday_wish
+Header: Happy Birthday! 🎉
+
+Hi {{1}}, 👋
+
+Wishing you a healthy smile on your special day!
+
+🎁 Your Gift: 15% OFF any dental treatment this month.
+📅 Valid until: {{2}}
+
+Reply "Claim" to book your appointment.
+
+Cheers,
+{{6}} Dental Care
+
+Footer:
+
+-----------------------------------------------
+
+14. Template Name: insurance_update
+Header: Insurance Plan Updated!
+
+Hi {{1}}, 👋
+
+Your dental insurance details have been successfully updated.
+
+📄 Plan: {{2}}
+📅 Renewal Date: {{3}}
+
+Need help? Reply "Support".
+
+Thank you,
+{{6}} Dental Care
+
+Footer:
+
+
+-----------------------------------------------
+
+15. Template Name: oral_health_tip
+Header: Pro Tip for a Healthier Smile!
+
+Hi {{1}}, 👋
+
+Did you know? {{2}} (e.g., "Flossing daily prevents gum disease!").
+
+🦷 Next Appointment:
+📅 {{3}} (Reply "Book" if none scheduled)
+
+Stay smiling! 😊
+{{6}} Dental Care
+
+Footer:
