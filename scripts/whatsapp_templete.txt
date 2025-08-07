@@ -1,4 +1,5 @@
 1. Template Name: dental_appointment_booking
+
 Header:Appointment Confirmation
 
 Hi {{1}}, 👋
@@ -22,34 +23,36 @@ Footer:
 ------------------------------------------------
 
 2. Template Name: dental_appointment_cancel
-Header:Appointment Cancelation
+
+Header:Appointment Cancellation
 
 Hi {{1}}, 👋
 
-Your dental appointment has been successfully canceled!
+Your dental appointment has been successfully canceled.
 
 🦷 Appointment Details:
 📅 Date: {{2}}
 ⏰ Time: {{3}}
 👨‍⚕️ Dentist: {{4}}
-🏥 Clinic: {{5}}
+🏥 Clinic: {{5}}x
 
-If you need to reschedule or cancel, reply with:
+If you need to reschedule, reply with:
 - "Reschedule"
-- "Cancel"
 
-Thank you for choosing {{6}} Dental Care. We look forward to seeing you!
+Thank you for choosing {{6}} Dental Care. We hope to assist you again.
+
 
 Footer:
 
 -----------------------------------------------
 
 3.Template Name: dental_appointment_reschedule
+
 Header:Appointment Reschedule
 
 Hi {{1}}, 👋
 
-Your dental appointment has been successfully rescheduled!
+Your dental appointment has been successfully rescheduled.
 
 🦷 Appointment Details:
 📅 Date: {{2}}
@@ -57,13 +60,86 @@ Your dental appointment has been successfully rescheduled!
 👨‍⚕️ Dentist: {{4}}
 🏥 Clinic: {{5}}
 
-If you need to reschedule or cancel, reply with:
+If you need to reschedule or cancel again, reply with:
 - "Reschedule"
 - "Cancel"
 
 Thank you for choosing {{6}} Dental Care. We look forward to seeing you!
 
+
 Footer:
 
 
 ------------------------------------------------
+
+4.Template Name: discount
+
+Header: Special Discount Just for You!
+
+Hi {{1}}, 👋
+
+You're eligible for an exclusive dental care discount!
+
+🦷 Details:
+📅 Valid on: {{2}}
+⏰ Timing: {{3}}
+👨‍⚕️ Dentist: {{4}}
+🏥 Clinic: {{5}}
+
+Book now to take advantage of this limited-time offer.
+
+Thank you for choosing {{6}} Dental Care. Smile more, spend less!
+
+Footer:
+
+---------------------------------
+
+5.Template Name: campaign
+
+Header: Dental Care Campaign Alert
+
+Hi {{1}}, 👋
+
+We're running a special dental health campaign!
+
+🦷 Campaign Appointment:
+📅 Date: {{2}}
+⏰ Time: {{3}}
+👨‍⚕️ Dentist: {{4}}
+🏥 Clinic: {{5}}
+
+Reply with:
+- "Book" to confirm your free consultation
+- "Reschedule" to pick another time
+
+Thank you for choosing {{6}} Dental Care!
+
+Footer:
+
+---------------------------------
+
+6.Template Name: free_campaign
+
+Header: Free Dental Campaign Invite
+
+
+
+Hi {{1}}, 👋
+
+You're invited to our FREE dental checkup campaign!
+
+🦷 Appointment Details:
+📅 Date: {{2}}
+⏰ Time: {{3}}
+👨‍⚕️ Dentist: {{4}}
+🏥 Clinic: {{5}}
+
+Reply with:
+- "Book" to confirm your appointment
+- "Cancel" if you're unavailable
+
+Thank you for trusting {{6}} Dental Care!
+
+Footer:
+
+
