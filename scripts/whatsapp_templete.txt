@@ -143,3 +143,32 @@ Thank you for trusting {{6}} Dental Care!
 Footer:
 
 
+
+---------------------------------
+
+
+6.Template Name:
+
+Header: Free Dental Campaign Invite
+
+
+
+Hi {{1}}, 👋
+
+You're invited to our FREE dental checkup campaign!
+
+🦷 Appointment Details:
+📅 Date: {{2}}
+⏰ Time: {{3}}
+👨‍⚕️ Dentist: {{4}}
+🏥 Clinic: {{5}}
+
+Reply with:
+- "Book" to confirm your appointment
+- "Cancel" if you're unavailable
+
+Thank you for trusting {{6}} Dental Care!
+
+Footer:
+
+
