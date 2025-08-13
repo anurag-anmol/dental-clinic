@@ -1112,7 +1112,7 @@ export function PatientHistoryDialog({ patient, isOpen, onClose }: PatientHistor
 
                     {loading ? (
                         <div className="flex items-center justify-center py-8">
-                            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                            <Smile className="h-8 w-8 animate-spin text-blue-600" />
                             <span className="ml-2 text-gray-600">Loading patient history...</span>
                         </div>
                     ) : (

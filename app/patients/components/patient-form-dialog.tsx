@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, User, Phone, Shield, FileText } from "lucide-react"
+import { Loader2, User, Phone, Shield, FileText, Smile } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 interface Patient {
@@ -390,7 +390,7 @@ export function PatientFormDialog({ isOpen, onClose, onSuccess, mode, patient }:
                             Cancel
                         </Button>
                         <Button type="submit" disabled={isSubmitting}>
-                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {isSubmitting && <Smile className="mr-2 h-4 w-4 animate-spin" />}
                             {mode === "add" ? "Add Patient" : "Update Patient"}
                         </Button>
                     </div>

@@ -24,6 +24,7 @@ import {
   Activity,
   CheckCircle,
   Clock,
+  Smile,
 } from "lucide-react"
 import { Layout } from "@/components/layout"
 import { useToast } from "@/hooks/use-toast"
@@ -169,7 +170,7 @@ export default function PatientViewPage() {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="h-8 w-8 animate-spin" />
+          <Smile className="h-8 w-8 animate-spin" />
         </div>
       </Layout>
     )
