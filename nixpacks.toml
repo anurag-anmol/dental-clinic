@@ -1,13 +1,13 @@
 
 [phases.setup]
-nixPkgs = ['bun']
+nixPkgs = ['npm']
 aptPkgs = ['build-essential']
 
 [phases.install]
-cmds = ["bun install"]
+cmds = ["npm install"]
 
 [phases.build]
-cmds = ["bun run build"]
+cmds = ["npm run build"]
 
 [start]
-cmd = "bun run start"
+cmd = "npm run start"
